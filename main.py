@@ -23,13 +23,14 @@ def messages_login(driver):
 
 def messages_parser(driver):
     while True:
-        page_number = int(driver.find_element(by=By.CLASS_NAME, value="paging-numeric-btn-disabled").get_attribute('value'))
+        page_number = int(
+            driver.find_element(by=By.CLASS_NAME, value="paging-numeric-btn-disabled").get_attribute('value'))
         elements = WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.CLASS_NAME, "BIALA")))
         identifiers = create_identifiers(elements)
         for elem in identifiers:
             yield elem
         pages = driver.find_elements(by=By.CLASS_NAME, value='paging-numeric-btn')
-        [page for page in pages if page.get_attribute('value') == f"{page_number+1}"][0].click()
+        [page for page in pages if page.get_attribute('value') == f"{page_number + 1}"][0].click()
 
 
 def create_identifiers(lst):
@@ -49,11 +50,16 @@ def check_identifier(message):
     pass
 
 
-try:
-    messages_login(mdriver)
-    parser = messages_parser(mdriver)
-    for _ in range(15):
-        print(next(parser))
-finally:
-    if config.background:
-        mdriver.quit()
+def main():
+    try:
+        messages_login(mdriver)
+        parser = messages_parser(mdriver)
+        for _ in range(15):
+            print(next(parser))
+    finally:
+        if config.background:
+            mdriver.quit()
+
+
+if __name__ == '__main__':
+    main()
