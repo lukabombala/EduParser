@@ -3,14 +3,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-import config
 from collections import namedtuple
-
-chrome_options = Options()
-if config.background:
-    chrome_options.add_argument("--headless")
-
-mdriver = Chrome(options=chrome_options)
+import sqlite3 as sl
+import config
 
 
 def messages_login(driver):
@@ -46,16 +41,37 @@ def create_identifiers(lst):
     return messages
 
 
-def check_identifier(message):
-    pass
+def check_identifier(conn, message):
+    with conn:
+        cur = conn.cursor()
+        cur.execute("""
+        SELECT *
+        FROM MESSAGE
+        WHERE title=?
+        AND sender=?
+        AND date=?
+        """, (message.topic, message.sender, message.date))
+        rows = cur.fetchall()
+        if not rows:
+            cur.execute("""INSERT INTO MESSAGE (title, sender, date, content)
+                           VALUES (?, ?, ?, ?)""", (message.topic, message.sender, message.date, 'test content'))
 
 
 def main():
+    chrome_options = Options()
+    if config.background:
+        chrome_options.add_argument("--headless")
+
+    mdriver = Chrome(options=chrome_options)
+    con = sl.connect(config.database_name)
+
     try:
         messages_login(mdriver)
         parser = messages_parser(mdriver)
-        for _ in range(15):
-            print(next(parser))
+        for _ in range(6):
+            mes = next(parser)
+            print(mes)
+            check_identifier(con, mes)
     finally:
         if config.background:
             mdriver.quit()
