@@ -28,6 +28,14 @@ def messages_parser(driver):
         [page for page in pages if page.get_attribute('value') == f"{page_number + 1}"][0].click()
 
 
+def get_message_content(driver, message):
+    driver.get(message.link)
+    elements = WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.CLASS_NAME, "BIALA")))
+    text = elements[15].text
+    driver.find_element(by=By.NAME, value='event_refreshPost').click()
+    return text
+
+
 def create_identifiers(lst):
     indices = [(1, 2, 4), (6, 7, 9), (11, 12, 14), (16, 17, 19), (21, 22, 24)]
     Message = namedtuple('Message', 'sender topic date link')
@@ -41,7 +49,7 @@ def create_identifiers(lst):
     return messages
 
 
-def check_identifier(conn, message):
+def check_identifier(driver, conn, message):
     with conn:
         cur = conn.cursor()
         cur.execute("""
@@ -53,8 +61,9 @@ def check_identifier(conn, message):
         """, (message.topic, message.sender, message.date))
         rows = cur.fetchall()
         if not rows:
+            text = get_message_content(driver, message)
             cur.execute("""INSERT INTO MESSAGE (title, sender, date, content)
-                           VALUES (?, ?, ?, ?)""", (message.topic, message.sender, message.date, 'test content'))
+                           VALUES (?, ?, ?, ?)""", (message.topic, message.sender, message.date, text))
 
 
 def main():
@@ -68,10 +77,9 @@ def main():
     try:
         messages_login(mdriver)
         parser = messages_parser(mdriver)
-        for _ in range(6):
+        for _ in range(5):
             mes = next(parser)
-            print(mes)
-            check_identifier(con, mes)
+            check_identifier(mdriver, con, mes)
     finally:
         if config.background:
             mdriver.quit()
