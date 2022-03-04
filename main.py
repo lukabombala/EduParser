@@ -4,6 +4,7 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from collections import namedtuple
+import notifier
 import sqlite3 as sl
 import config
 
@@ -64,6 +65,9 @@ def check_identifier(driver, conn, message):
             text = get_message_content(driver, message)
             cur.execute("""INSERT INTO MESSAGE (title, sender, date, content)
                            VALUES (?, ?, ?, ?)""", (message.topic, message.sender, message.date, text))
+            notifier.send(message, text)
+            return True
+        return False
 
 
 def main():
@@ -77,9 +81,14 @@ def main():
     try:
         messages_login(mdriver)
         parser = messages_parser(mdriver)
-        for _ in range(5):
+        ind = 0
+        while ind < config.stop_value:
             mes = next(parser)
-            check_identifier(mdriver, con, mes)
+            check = check_identifier(mdriver, con, mes)
+            if not check:
+                break
+            ind += 1
+
     finally:
         if config.background:
             mdriver.quit()
