@@ -9,6 +9,23 @@ import sqlite3 as sl
 import config
 
 
+def database_init():
+    con = sl.connect(config.database_name)
+
+    with con:
+        cur = con.cursor()
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS MESSAGE (
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                sender TEXT,
+                date DATE,
+                content TEXT
+            );
+        """)
+
+
 def messages_login(driver):
     driver.get('https://edukacja.pwr.wroc.pl/EdukacjaWeb/studia.do')
     driver.find_element(by=By.NAME, value='login').send_keys(config.username)
@@ -71,6 +88,8 @@ def check_identifier(driver, conn, message):
 
 
 def main():
+    database_init()
+
     chrome_options = Options()
     if config.background:
         chrome_options.add_argument("--headless")
